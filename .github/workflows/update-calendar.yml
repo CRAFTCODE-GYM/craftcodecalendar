@@ -2,9 +2,7 @@ name: Update competition calendar
 
 on:
   schedule:
-    # 日本時間に合わせて 1 日 2 回(UTC 22:00 = JST 07:00 / UTC 09:00 = JST 18:00)
-    - cron: "0 22 * * *"
-    - cron: "0 9 * * *"
+    - cron: "0 3 * * 1"   # 毎週月曜 JST 12:00 (UTC 03:00)
   workflow_dispatch: {} # 手動実行ボタン
   push:
     branches: [main]
