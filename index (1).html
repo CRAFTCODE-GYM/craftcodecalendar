@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>導入大会カレンダー | CRAFTCODE 大会運営プラットフォーム</title>
+<meta name="description" content="CRAFTCODE 大会運営プラットフォームを導入する体操競技・新体操大会のスケジュール一覧。" />
+<style>
+  :root {
+    --ink: #14181f;
+    --ink-soft: #4a5260;
+    --ink-faint: #8b94a3;
+    --line: #e4e7ec;
+    --line-soft: #eef0f3;
+    --paper: #ffffff;
+    --bg: #f5f6f8;
+    /* CRAFTCODE アクセント: 採点パネルを思わせる深いインディゴ */
+    --accent: #2f3e8c;
+    --accent-deep: #1f2a63;
+    --accent-tint: #eaecf7;
+    /* 状態色 */
+    --done-bar: #2f3e8c;      /* 導入決定 */
+    --done-tint: #e8ebf6;
+    --finished-bar: #5b8a72;  /* 大会終了 */
+    --finished-tint: #e6efe9;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgba(20,24,31,.04), 0 4px 16px rgba(20,24,31,.05);
+    --maxw: 1080px;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans",
+      "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", Meiryo, sans-serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  /* ---------- Header ---------- */
+  .masthead {
+    background: var(--accent-deep);
+    color: #fff;
+    border-bottom: 1px solid var(--accent-deep);
+  }
+  .masthead-inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 22px 20px 26px;
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    font-size: 13px;
+    color: #c5cbe8;
+  }
+  .brand .mark {
+    font-family: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .2em;
+  }
+  h1 {
+    margin: 10px 0 6px;
+    font-size: clamp(22px, 4.4vw, 30px);
+    font-weight: 700;
+    letter-spacing: .01em;
+    line-height: 1.3;
+  }
+  .lede {
+    margin: 0;
+    color: #b9c0dd;
+    font-size: 14px;
+    max-width: 56ch;
+  }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 18px 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+  .legend {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .legend .key { display: inline-flex; align-items: center; gap: 7px; }
+  .swatch {
+    width: 14px; height: 14px; border-radius: 4px; flex: none;
+  }
+  .swatch.done { background: var(--done-bar); }
+  .swatch.finished { background: var(--finished-bar); }
+
+  .spacer { flex: 1 1 auto; }
+
+  .viewtoggle {
+    display: inline-flex;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .viewtoggle button {
+    border: 0; background: transparent; cursor: pointer;
+    font: inherit; font-size: 13px; font-weight: 600;
+    color: var(--ink-soft);
+    padding: 6px 16px; border-radius: 999px;
+  }
+  .viewtoggle button[aria-pressed="true"] {
+    background: var(--accent); color: #fff;
+  }
+
+  /* ---------- Month nav ---------- */
+  .monthnav {
+    max-width: var(--maxw);
+    margin: 16px auto 0;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .monthnav h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    min-width: 150px;
+  }
+  .navbtn {
+    width: 36px; height: 36px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 16px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .navbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .today-btn {
+    margin-left: 4px;
+    border: 1px solid var(--line);
+    background: var(--paper);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font: inherit; font-size: 13px; font-weight: 600;
+    padding: 7px 14px;
+  }
+  .today-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- Wrap ---------- */
+  main {
+    max-width: var(--maxw);
+    margin: 14px auto 0;
+    padding: 0 20px 60px;
+  }
+
+  /* ---------- Calendar grid ---------- */
+  .cal {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .weekhead {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid var(--line);
+    background: #fafbfc;
+  }
+  .weekhead div {
+    padding: 9px 0;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    letter-spacing: .04em;
+  }
+  .weekhead div.sun { color: #c2606a; }
+  .weekhead div.sat { color: #5a76b8; }
+
+  .grid {
+    display: block;
+  }
+  /* 1週 = セル背景レイヤ + 帯オーバーレイレイヤ を重ねる */
+  .week { position: relative; }
+  .cellrow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+  }
+  .cell {
+    border-right: 1px solid var(--line-soft);
+    border-bottom: 1px solid var(--line-soft);
+    min-height: 108px;
+    padding: 6px 6px 8px;
+  }
+  .cell:nth-child(7n) { border-right: 0; }
+  .cell.muted { background: #fafbfc; }
+  .cell .dnum {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    display: inline-block;
+    min-width: 22px;
+    text-align: center;
+    line-height: 22px;
+    border-radius: 6px;
+  }
+  .cell.muted .dnum { color: var(--ink-faint); }
+  .cell.is-today .dnum { background: var(--accent); color: #fff; }
+  .cell .dnum.sun { color: #c2606a; }
+  .cell .dnum.sat { color: #5a76b8; }
+
+  /* 帯オーバーレイ: セルの日付番号(高さ約30px)の下から配置 */
+  .barareawrap {
+    position: absolute;
+    top: 30px; left: 0; right: 0; bottom: 6px;
+    pointer-events: none;
+  }
+  .bararea {
+    display: grid;
+    gap: 3px 0;
+    height: 100%;
+    align-content: start;
+  }
+  .bar {
+    pointer-events: auto;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.4;
+    padding: 2px 7px;
+    color: #fff;
+    background: var(--done-bar);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    border-radius: 0;
+    margin: 0 0;
+  }
+  .bar.finished { background: var(--finished-bar); }
+  .bar.seg-start { border-top-left-radius: 6px; border-bottom-left-radius: 6px; margin-left: 3px; }
+  .bar.seg-end   { border-top-right-radius: 6px; border-bottom-right-radius: 6px; margin-right: 3px; }
+  .bar .tag {
+    display: inline-block;
+    font-size: 9.5px;
+    background: rgba(255,255,255,.25);
+    border-radius: 3px;
+    padding: 0 4px;
+    margin-right: 4px;
+    vertical-align: 1px;
+  }
+
+  /* ---------- List view ---------- */
+  .listwrap { display: none; }
+  .month-group { margin-top: 22px; }
+  .month-group:first-child { margin-top: 4px; }
+  .month-label {
+    font-size: 13px; font-weight: 700; letter-spacing: .04em;
+    color: var(--accent);
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--accent-tint);
+    margin-bottom: 2px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .row .when {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.35;
+  }
+  .row .when .range {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-faint);
+  }
+  .row .what .nm { font-weight: 600; }
+  .row .what .venue {
+    color: var(--ink-soft); font-size: 13px;
+  }
+  .row .what .venue::before { content: "＠"; color: var(--ink-faint); }
+  .row .tags { margin-left: 6px; }
+  .pill {
+    font-size: 11px; font-weight: 700;
+    padding: 3px 9px; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .pill.done { background: var(--done-tint); color: var(--accent-deep); }
+  .pill.finished { background: var(--finished-tint); color: #34604a; }
+  .tag-chip {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--accent); background: var(--accent-tint);
+    border-radius: 4px; padding: 1px 6px; margin-left: 5px;
+  }
+
+  /* ---------- Footer / states ---------- */
+  .meta {
+    max-width: var(--maxw);
+    margin: 26px auto 0;
+    padding: 0 20px;
+    color: var(--ink-faint);
+    font-size: 12px;
+  }
+  .empty, .errbox {
+    text-align: center; padding: 60px 20px; color: var(--ink-faint);
+  }
+  .errbox { color: #b4555f; }
+
+  /* tooltip-ish detail popover */
+  .pop {
+    position: fixed;
+    z-index: 50;
+    background: var(--ink);
+    color: #fff;
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    max-width: 240px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity .12s ease, transform .12s ease;
+  }
+  .pop.show { opacity: 1; transform: translateY(0); }
+  .pop b { font-weight: 700; }
+  .pop .pop-when { color: #c9cedd; display: block; margin-top: 3px; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 560px) {
+    .cell { min-height: 78px; padding: 4px 3px 6px; }
+    .weekhead div { font-size: 11px; }
+    .bar { font-size: 10px; padding: 2px 5px; }
+    .bar .tag { display: none; }
+    .row { grid-template-columns: 1fr auto; }
+    .row .when { grid-column: 1 / -1; }
+    h1 { letter-spacing: 0; }
+    .monthnav h2 { min-width: 0; font-size: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pop { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <div class="brand"><span class="mark">CRAFTCODE</span><span>大会運営プラットフォーム</span></div>
+      <h1>導入大会カレンダー</h1>
+      <p class="lede">CRAFTCODE のスコアリング・運営システムを導入する体操競技／新体操大会の予定です。導入をご検討の競技団体さまは、運用実績の確認にご活用ください。</p>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="legend">
+      <span class="key"><span class="swatch done"></span>導入決定</span>
+      <span class="key"><span class="swatch finished"></span>開催済</span>
+    </div>
+    <span class="spacer"></span>
+    <div class="viewtoggle" role="group" aria-label="表示切替">
+      <button id="btn-month" aria-pressed="true">カレンダー</button>
+      <button id="btn-list" aria-pressed="false">一覧</button>
+    </div>
+  </div>
+
+  <div class="monthnav" id="monthnav">
+    <button class="navbtn" id="prev" aria-label="前の月">‹</button>
+    <button class="navbtn" id="next" aria-label="次の月">›</button>
+    <h2 id="month-title">—</h2>
+    <button class="today-btn" id="today-btn">今月</button>
+  </div>
+
+  <main>
+    <div class="cal" id="calwrap" aria-live="polite">
+      <div class="weekhead">
+        <div class="sun">日</div><div>月</div><div>火</div><div>水</div>
+        <div>木</div><div>金</div><div class="sat">土</div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+
+    <div class="listwrap" id="listwrap"></div>
+  </main>
+
+  <p class="meta" id="meta"></p>
+  <div class="pop" id="pop"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  var DATA_URL = "competitions.json";
+  var state = { events: [], view: "month", cursor: null };
+
+  // ---------- date helpers (ローカル日付、UTCずれ防止) ----------
+  function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+  function pad(n){ return (n<10?"0":"")+n; }
+  function parseYMD(s){ var p=s.split("-"); return new Date(+p[0], +p[1]-1, +p[2]); }
+  function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+  function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
+  function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  var WD = ["日","月","火","水","木","金","土"];
+
+  function fmtRange(startStr, endStr){
+    var s=parseYMD(startStr), e=parseYMD(endStr);
+    var sTxt=(s.getMonth()+1)+"月"+s.getDate()+"日("+WD[s.getDay()]+")";
+    if(startStr===endStr) return sTxt;
+    var eTxt;
+    if(s.getMonth()===e.getMonth()) eTxt=e.getDate()+"日("+WD[e.getDay()]+")";
+    else eTxt=(e.getMonth()+1)+"月"+e.getDate()+"日("+WD[e.getDay()]+")";
+    return sTxt+" 〜 "+eTxt;
+  }
+
+  // ---------- load ----------
+  function load(){
+    fetch(DATA_URL, { cache: "no-store" })
+      .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(json){
+        state.events = (json.events||[]).filter(function(e){ return e.start && e.end; });
+        var gen = json.generatedAt ? new Date(json.generatedAt) : null;
+        document.getElementById("meta").textContent =
+          "掲載 " + state.events.length + " 大会" +
+          (gen ? "・最終更新 " + gen.getFullYear()+"/"+pad(gen.getMonth()+1)+"/"+pad(gen.getDate()) : "");
+        initCursor();
+        render();
+      })
+      .catch(function(err){
+        document.getElementById("grid").innerHTML =
+          '<div class="errbox">データを読み込めませんでした（'+err.message+'）。時間をおいて再読み込みしてください。</div>';
+      });
+  }
+
+  function initCursor(){
+    // 今月。ただし未来の大会が無く過去だけなら直近大会の月へ。
+    var now = new Date();
+    state.cursor = startOfMonth(now);
+    var hasThisOrFuture = state.events.some(function(e){
+      return parseYMD(e.end) >= startOfMonth(now);
+    });
+    if(!hasThisOrFuture && state.events.length){
+      var last = state.events.reduce(function(a,b){ return a.start>b.start?a:b; });
+      state.cursor = startOfMonth(parseYMD(last.start));
+    }
+  }
+
+  // ---------- month view ----------
+  function render(){
+    if(state.view==="month") renderMonth(); else renderList();
+  }
+
+  function renderMonth(){
+    document.getElementById("calwrap").style.display = "";
+    document.getElementById("listwrap").style.display = "none";
+    document.getElementById("monthnav").style.display = "flex";
+
+    var cur = state.cursor;
+    document.getElementById("month-title").textContent =
+      cur.getFullYear() + "年 " + (cur.getMonth()+1) + "月";
+
+    var first = startOfMonth(cur);
+    var gridStart = addDays(first, -first.getDay()); // 直前の日曜
+    var today = stripTime(new Date());
+
+    // 必要な週数を決める(当月末日が含まれる週まで)
+    var lastDay = new Date(cur.getFullYear(), cur.getMonth()+1, 0);
+    var weeksNeeded = Math.ceil((first.getDay() + lastDay.getDate()) / 7);
+
+    var grid = document.getElementById("grid");
+    grid.innerHTML = "";
+
+    for(var w=0; w<weeksNeeded; w++){
+      var weekStart = addDays(gridStart, w*7);
+      grid.appendChild(buildWeek(weekStart, cur, today));
+    }
+  }
+
+  // 1週間ぶんの行(セル7つ + イベント帯レーン)を作る
+  function buildWeek(weekStart, cur, today){
+    var week = document.createElement("div");
+    week.className = "week";
+
+    // セル(日付背景)
+    var cellRow = document.createElement("div");
+    cellRow.className = "cellrow";
+    var days = [];
+    for(var i=0;i<7;i++){
+      var d = addDays(weekStart, i);
+      days.push(d);
+      var cell = document.createElement("div");
+      cell.className = "cell" + (d.getMonth()!==cur.getMonth() ? " muted":"") +
+        (sameDay(d,today) ? " is-today":"");
+      var dn = document.createElement("span");
+      dn.className = "dnum" + (d.getDay()===0?" sun":"") + (d.getDay()===6?" sat":"");
+      dn.textContent = d.getDate();
+      cell.appendChild(dn);
+      cellRow.appendChild(cell);
+    }
+    week.appendChild(cellRow);
+
+    var weekEnd = days[6];
+
+    // この週に重なるイベントを収集し、開始日→期間長でソート
+    var segs = [];
+    state.events.forEach(function(ev){
+      var s = stripTime(parseYMD(ev.start)), e = stripTime(parseYMD(ev.end));
+      if(e < days[0] || s > weekEnd) return;
+      var colStart = Math.max(0, daysBetween(days[0], s));
+      var colEnd = Math.min(6, daysBetween(days[0], e));
+      segs.push({ ev: ev, colStart: colStart, colEnd: colEnd,
+        isHead: s >= days[0], isTail: e <= weekEnd, span: colEnd-colStart });
+    });
+    segs.sort(function(a,b){
+      if(a.colStart!==b.colStart) return a.colStart-b.colStart;
+      return b.span - a.span;
+    });
+
+    // レーン割り当て(重なり回避)
+    var lanes = []; // 各レーンの占有 colEnd
+    segs.forEach(function(seg){
+      var placed=false;
+      for(var L=0; L<lanes.length; L++){
+        if(seg.colStart > lanes[L]){ seg.lane=L; lanes[L]=seg.colEnd; placed=true; break; }
+      }
+      if(!placed){ seg.lane=lanes.length; lanes.push(seg.colEnd); }
+    });
+
+    var laneCount = lanes.length;
+    var barArea = document.createElement("div");
+    barArea.className = "barareawrap";
+    var inner = document.createElement("div");
+    inner.className = "bararea";
+    inner.style.gridTemplateColumns = "repeat(7, 1fr)";
+    inner.style.gridTemplateRows = "repeat(" + Math.max(laneCount,1) + ", auto)";
+
+    segs.forEach(function(seg){
+      var bar = document.createElement("div");
+      var ev = seg.ev;
+      var cls = "bar " + (ev.status==="大会終了"?"finished":"");
+      if(seg.isHead) cls += " seg-start";
+      if(seg.isTail) cls += " seg-end";
+      bar.className = cls;
+      bar.style.gridColumn = (seg.colStart+1) + " / " + (seg.colEnd+2);
+      bar.style.gridRow = (seg.lane+1);
+
+      var label = "";
+      if(ev.tags && ev.tags.length){ label += '<span class="tag">'+escapeHtml(ev.tags.join(" "))+'</span>'; }
+      label += escapeHtml(displayName(ev));
+      bar.innerHTML = label;
+
+      bar.addEventListener("mouseenter", function(e){ showPop(e, ev); });
+      bar.addEventListener("mousemove", function(e){ movePop(e); });
+      bar.addEventListener("mouseleave", hidePop);
+      bar.addEventListener("click", function(e){ e.stopPropagation(); showPop(e, ev, true); });
+      inner.appendChild(bar);
+    });
+
+    barArea.appendChild(inner);
+    week.appendChild(barArea);
+    return week;
+  }
+
+  function daysBetween(a,b){ // b - a を日数で(同日=0)
+    return Math.round((stripTime(b)-stripTime(a)) / 86400000);
+  }
+
+  // 表示名: 日付プレフィックス(先頭4桁数字)があれば外して見やすく
+  function displayName(ev){
+    var n = ev.name || ev.title || "";
+    n = n.replace(/^\d{3,4}/, ""); // 0613 等を除去
+    if(ev.venue) n += " @"+ev.venue;
+    return n;
+  }
+
+  // ---------- list view ----------
+  function renderList(){
+    document.getElementById("calwrap").style.display = "none";
+    document.getElementById("monthnav").style.display = "none";
+    var wrap = document.getElementById("listwrap");
+    wrap.style.display = "block";
+    wrap.innerHTML = "";
+
+    if(!state.events.length){
+      wrap.innerHTML = '<div class="empty">掲載中の大会はありません。</div>';
+      return;
+    }
+
+    var sorted = state.events.slice().sort(function(a,b){ return a.start<b.start?-1:1; });
+    var lastKey = "";
+    var group = null;
+
+    sorted.forEach(function(ev){
+      var s = parseYMD(ev.start);
+      var key = s.getFullYear()+"-"+s.getMonth();
+      if(key!==lastKey){
+        group = document.createElement("div");
+        group.className = "month-group";
+        var lbl = document.createElement("div");
+        lbl.className = "month-label";
+        lbl.textContent = s.getFullYear()+"年 "+(s.getMonth()+1)+"月";
+        group.appendChild(lbl);
+        wrap.appendChild(group);
+        lastKey = key;
+      }
+      group.appendChild(buildRow(ev));
+    });
+  }
+
+  function buildRow(ev){
+    var row = document.createElement("div");
+    row.className = "row";
+
+    var s = parseYMD(ev.start);
+    var when = document.createElement("div");
+    when.className = "when";
+    when.innerHTML = (s.getMonth()+1)+"/"+s.getDate() +
+      '<span class="range">'+escapeHtml(fmtRange(ev.start, ev.end))+'</span>';
+
+    var what = document.createElement("div");
+    what.className = "what";
+    var nm = '<span class="nm">'+escapeHtml(cleanName(ev))+'</span>';
+    if(ev.tags && ev.tags.length){
+      ev.tags.forEach(function(t){ nm += '<span class="tag-chip">'+escapeHtml(t)+'</span>'; });
+    }
+    if(ev.venue) nm += ' <span class="venue">'+escapeHtml(ev.venue)+'</span>';
+    what.innerHTML = nm;
+
+    var st = document.createElement("span");
+    st.className = "pill " + (ev.status==="大会終了" ? "finished":"done");
+    st.textContent = ev.status==="大会終了" ? "開催済" : "導入決定";
+
+    row.appendChild(when);
+    row.appendChild(what);
+    row.appendChild(st);
+    return row;
+  }
+
+  function cleanName(ev){
+    var n = ev.name || ev.title || "";
+    return n.replace(/^\d{3,4}/, "");
+  }
+
+  // ---------- popover ----------
+  var pop = document.getElementById("pop");
+  function showPop(e, ev, sticky){
+    var statusTxt = ev.status==="大会終了" ? "開催済" : "導入決定";
+    var tags = (ev.tags&&ev.tags.length) ? " ["+ev.tags.join("][")+"]" : "";
+    pop.innerHTML = "<b>"+escapeHtml(cleanName(ev))+tags+"</b>" +
+      (ev.venue ? " ＠"+escapeHtml(ev.venue) : "") +
+      '<span class="pop-when">'+escapeHtml(fmtRange(ev.start, ev.end))+" ・ "+statusTxt+"</span>";
+    pop.classList.add("show");
+    movePop(e);
+  }
+  function movePop(e){
+    var x = (e.clientX||0)+14, y=(e.clientY||0)+14;
+    var w = pop.offsetWidth, h = pop.offsetHeight;
+    if(x+w > window.innerWidth-8) x = window.innerWidth-w-8;
+    if(y+h > window.innerHeight-8) y = (e.clientY||0)-h-12;
+    pop.style.left = x+"px"; pop.style.top = y+"px";
+  }
+  function hidePop(){ pop.classList.remove("show"); }
+  document.addEventListener("scroll", hidePop, true);
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- controls ----------
+  document.getElementById("prev").addEventListener("click", function(){
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth()-1, 1);
+    renderMonth();
+  });
+  document.getElementById("next").addEventListener("click", function(){
+    state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth()+1, 1);
+    renderMonth();
+  });
+  document.getElementById("today-btn").addEventListener("click", function(){
+    state.cursor = startOfMonth(new Date());
+    renderMonth();
+  });
+  document.getElementById("btn-month").addEventListener("click", function(){
+    state.view="month";
+    this.setAttribute("aria-pressed","true");
+    document.getElementById("btn-list").setAttribute("aria-pressed","false");
+    render();
+  });
+  document.getElementById("btn-list").addEventListener("click", function(){
+    state.view="list";
+    this.setAttribute("aria-pressed","true");
+    document.getElementById("btn-month").setAttribute("aria-pressed","false");
+    render();
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
