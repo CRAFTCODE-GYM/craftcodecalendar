@@ -23,6 +23,8 @@
     --done-tint: #e8ebf6;
     --finished-bar: #5b8a72;  /* 大会終了 */
     --finished-tint: #e6efe9;
+    --ongoing-bar: #c0392b;   /* 本日開催中 */
+    --ongoing-tint: #fae8e6;
     --radius: 10px;
     --shadow: 0 1px 2px rgba(20,24,31,.04), 0 4px 16px rgba(20,24,31,.05);
     --maxw: 1080px;
@@ -253,6 +255,7 @@
     margin: 0 0;
   }
   .bar.finished { background: var(--finished-bar); }
+  .bar.ongoing { background: var(--ongoing-bar); }
   .bar.seg-start { border-top-left-radius: 6px; border-bottom-left-radius: 6px; margin-left: 3px; }
   .bar.seg-end   { border-top-right-radius: 6px; border-bottom-right-radius: 6px; margin-right: 3px; }
   .bar .tag {
@@ -303,13 +306,13 @@
   }
   .row .what .venue::before { content: "＠"; color: var(--ink-faint); }
   .row .tags { margin-left: 6px; }
-  .pill {
-    font-size: 11px; font-weight: 700;
-    padding: 3px 9px; border-radius: 999px;
-    white-space: nowrap;
+  .statusdot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex: none; display: inline-block;
   }
-  .pill.done { background: var(--done-tint); color: var(--accent-deep); }
-  .pill.finished { background: var(--finished-tint); color: #34604a; }
+  .statusdot.done { background: var(--done-bar); }
+  .statusdot.finished { background: var(--finished-bar); }
+  .statusdot.ongoing { background: var(--ongoing-bar); }
   .tag-chip {
     font-size: 10.5px; font-weight: 700;
     color: var(--accent); background: var(--accent-tint);
@@ -370,16 +373,12 @@
   <header class="masthead">
     <div class="masthead-inner">
       <div class="brand"><span class="mark">CRAFTCODE</span><span>大会運営プラットフォーム</span></div>
-      <h1>導入大会カレンダー</h1>
-      <p class="lede">CRAFTCODE のスコアリング・運営システムを導入する体操競技／新体操大会の予定です。導入をご検討の競技団体さまは、運用実績の確認にご活用ください。</p>
+      <h1>大会カレンダー</h1>
+      <p class="lede">CRAFTCODE 大会運営プラットフォームを導入する体操競技／新体操大会の予定です。導入をご検討の競技団体さまは、空き状況の確認にご活用ください。</p>
     </div>
   </header>
 
   <div class="toolbar">
-    <div class="legend">
-      <span class="key"><span class="swatch done"></span>導入決定</span>
-      <span class="key"><span class="swatch finished"></span>開催済</span>
-    </div>
     <span class="spacer"></span>
     <div class="viewtoggle" role="group" aria-label="表示切替">
       <button id="btn-month" aria-pressed="true">カレンダー</button>
@@ -424,6 +423,12 @@
   function sameDay(a,b){ return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate(); }
   function startOfMonth(d){ return new Date(d.getFullYear(), d.getMonth(), 1); }
   function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  // 本日が大会期間内(開催中)かどうか
+  function isOngoing(ev){
+    var today = stripTime(new Date());
+    var s = stripTime(parseYMD(ev.start)), e = stripTime(parseYMD(ev.end));
+    return today >= s && today <= e;
+  }
   var WD = ["日","月","火","水","木","金","土"];
 
   function fmtRange(startStr, endStr){
@@ -560,7 +565,7 @@
     segs.forEach(function(seg){
       var bar = document.createElement("div");
       var ev = seg.ev;
-      var cls = "bar " + (ev.status==="大会終了"?"finished":"");
+      var cls = "bar " + (isOngoing(ev) ? "ongoing" : (ev.status==="大会終了"?"finished":""));
       if(seg.isHead) cls += " seg-start";
       if(seg.isTail) cls += " seg-end";
       bar.className = cls;
@@ -650,8 +655,9 @@
     what.innerHTML = nm;
 
     var st = document.createElement("span");
-    st.className = "pill " + (ev.status==="大会終了" ? "finished":"done");
-    st.textContent = ev.status==="大会終了" ? "開催済" : "導入決定";
+    var stCls = isOngoing(ev) ? "ongoing" : (ev.status==="大会終了" ? "finished":"done");
+    st.className = "statusdot " + stCls;
+    st.setAttribute("aria-hidden", "true");
 
     row.appendChild(when);
     row.appendChild(what);
@@ -667,11 +673,11 @@
   // ---------- popover ----------
   var pop = document.getElementById("pop");
   function showPop(e, ev, sticky){
-    var statusTxt = ev.status==="大会終了" ? "開催済" : "導入決定";
+    var ongoingTxt = isOngoing(ev) ? " ・ 開催中" : "";
     var tags = (ev.tags&&ev.tags.length) ? " ["+ev.tags.join("][")+"]" : "";
     pop.innerHTML = "<b>"+escapeHtml(cleanName(ev))+tags+"</b>" +
       (ev.venue ? " ＠"+escapeHtml(ev.venue) : "") +
-      '<span class="pop-when">'+escapeHtml(fmtRange(ev.start, ev.end))+" ・ "+statusTxt+"</span>";
+      '<span class="pop-when">'+escapeHtml(fmtRange(ev.start, ev.end))+ongoingTxt+"</span>";
     pop.classList.add("show");
     movePop(e);
   }
